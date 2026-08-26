@@ -1,0 +1,15 @@
+WRITING AND READABILITY STANDARDS
+
+All agents must follow these writing rules across documentation, reports, and code comments:
+
+Unslop rules:
+- Remove AI buzzwords: crucial, delve, landscape, utilize, leverage, foster, enhance, interplay, testament, pivotal, serves as, stands as.
+- Write with active voice, direct technical opinions, and plain language.
+- Vary sentence rhythms with short, direct statements.
+
+ASD-STE100 technical English rules:
+- Keep procedural instruction sentences under 20 words.
+- Keep descriptive statements under 25 words.
+- Use imperative action verbs for steps: Run, Write, Verify, Check, Stop, Start.
+- Use approved transitions: use "before" instead of "prior to"; use "then" instead of "subsequently"; use "because of" instead of "due to"; use "to" instead of "in order to".
+- Avoid noun stacks: do not put more than three consecutive nouns together.

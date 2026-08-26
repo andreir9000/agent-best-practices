@@ -1,0 +1,47 @@
+SESSION HANDOFF PROCEDURE
+
+Use this procedure when the user runs /handoff or asks for a session handoff file.
+
+Write the summary to docs/handoff-<short-name>.txt in the active workspace. Follow readability-standards.txt.
+
+
+1. CONTENT RULES
+
+Epistemic honesty:
+- State root causes only when experimentally confirmed.
+- Label working theories as unconfirmed hypotheses.
+- List all explored paths, files, and disproven hypotheses with failure reasons.
+- Record unexplored avenues for the incoming agent.
+
+Task scoping:
+- Focus strictly on the domain problem, code changes, and system behavior.
+- Exclude global instructions and agent policies. The incoming agent already has them.
+- Exclude internal tool retry mechanics unless debugging agent tools.
+
+
+2. DOCUMENT STRUCTURE
+
+Every handoff document must follow this 4-part structure:
+
+1. Problem statement:
+   - Paragraph 1: Primary domain problem and session focus.
+   - Paragraph 2: Current operational status, target outcome, and remaining challenges.
+
+2. Narrative:
+   - Chronological sequence of engineering actions and outcomes in the codebase.
+   - Use the pattern: "First, we tested [action] with [result]. Then, we tested [action] with [result]..."
+
+3. Supporting evidence:
+   - Confirmed technical facts, empirical data, error traces, and test logs.
+   - Reference exact application error messages and test outputs.
+
+4. Next steps and technical details:
+   - Specific file paths, line ranges, environment configs, and project dependencies.
+   - Actionable next steps and recommended verification commands for the incoming agent.
+
+
+3. EXECUTION
+
+1. Inspect the session state for completed actions, tested hypotheses, and blockers.
+2. Write or update docs/handoff-<short-name>.txt in the active workspace.
+3. Output a short summary to the user with the file path.

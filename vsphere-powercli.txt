@@ -1,0 +1,95 @@
+VMWARE VSPHERE AND POWERCLI RULES
+
+1. PREREQUISITES
+
+Scripts can assume VMware.PowerCLI is imported and connection to vCenter is established, or load credentials from DPAPI files.
+
+
+2. POWERCLI COMMAND RULES
+
+Advanced settings:
+Do not use Get-VMHostAdvancedConfiguration or Set-VMHostAdvancedConfiguration. VMware deprecated those cmdlets. Use Get-AdvancedSetting and Set-AdvancedSetting:
+
+  # Read setting
+  $Setting = Get-AdvancedSetting -Entity $VMHost -Name "Syslog.global.logHost"
+
+  # Write setting
+  $Setting | Set-AdvancedSetting -Value "syslog.corp.local:514" -Confirm:$false
+
+ESXi host syslog reload:
+Do not reload syslog using $VMHost.ExtensionData.ConfigManager.SyslogSystem. Modern ESXi hosts do not have that property. Use Get-EsxCli -V2:
+
+  $EsxCli = Get-EsxCli -VMHost $VMHost -V2
+  $EsxCli.system.syslog.reload.Invoke()
+
+VDS VMkernel adapter creation and jumbo frames:
+When creating a VMkernel adapter on a Distributed Virtual Switch portgroup, pass both -PortGroup and -VirtualSwitch:
+
+  New-VMHostNetworkAdapter -VMHost $VMHost -PortGroup $pg -VirtualSwitch $vds -IP $IP -SubnetMask $Mask
+
+VMkernel adapters do not inherit MTU 9000 from the switch automatically. Explicitly pass -Mtu 9000 during creation or set it afterward:
+
+  Set-VMHostNetworkAdapter -VirtualNic $vNic -Mtu 9000 -Confirm:$false
+
+Storage HBA and VMFS rescans:
+Trigger storage rescans across all adapters:
+
+  Get-VMHostStorage -VMHost $VMHost -RescanAllHba -RescanVmfs
+
+
+3. LOCAL ESXI HOST ACCOUNTS THROUGH VCENTER
+
+When connected to vCenter, cmdlets like New-VMHostAccount and New-VIPermission fail because they expect direct host connections or Active Directory SSO users.
+
+Create or update local accounts:
+Use HostLocalAccountManager directly through the host view:
+
+  $ActMgr = Get-View $VMHost.ExtensionData.ConfigManager.AccountManager
+
+  $AccountSpec = New-Object VMware.Vim.HostAccountSpec
+  $AccountSpec.Id = "svc-backup"
+  $AccountSpec.Password = $PlainPassword
+  $AccountSpec.Description = "Dedicated backup service account"
+
+  $ActMgr.CreateUser($AccountSpec)   # or $ActMgr.UpdateUser($AccountSpec)
+
+Assign local ESXi permissions:
+Use Get-EsxCli -V2 to set local roles:
+
+  $EsxCli = Get-EsxCli -VMHost $VMHost -V2
+  $PermArgs = $EsxCli.system.permission.set.CreateArgs()
+  $PermArgs.id = "svc-backup"
+  $PermArgs.role = "ReadOnly"
+  $PermArgs.group = $false
+  $EsxCli.system.permission.set.Invoke($PermArgs)
+
+Disable interactive shell access:
+  $EsxCli = Get-EsxCli -VMHost $VMHost -V2
+  $SetArgs = $EsxCli.system.account.set.CreateArgs()
+  $SetArgs.id = "svc-backup"
+  $SetArgs.shellaccess = $false
+  $EsxCli.system.account.set.Invoke($SetArgs)
+
+
+4. WBEM AND SFCB CIM WATCHDOG MANAGEMENT
+
+# Enable WBEM provider
+$EsxCli = Get-EsxCli -VMHost $VMHost -V2
+$WbemArgs = $EsxCli.system.wbem.set.CreateArgs()
+$WbemArgs.enable = $true
+$EsxCli.system.wbem.set.Invoke($WbemArgs)
+
+# Start SFCB watchdog and set policy to on
+Get-VMHostService -VMHost $VMHost | Where-Object { $_.Key -eq "sfcbd-watchdog" } | Start-VMHostService -Confirm:$false
+Get-VMHostService -VMHost $VMHost | Where-Object { $_.Key -eq "sfcbd-watchdog" } | Set-VMHostService -Policy "on" -Confirm:$false
+
+
+5. POWERSHELL STRING VARIABLE SCOPING
+
+When a variable name in double quotes is immediately followed by a colon, wrap the variable in curly braces. Otherwise PowerShell parses the colon as a scope identifier:
+
+# Correct
+$LogHost = "${SyslogIP}:${SyslogPort}"
+
+# Broken
+$LogHost = "$SyslogIP:$SyslogPort"

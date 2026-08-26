@@ -1,0 +1,41 @@
+HPE ILO 5 AND REDFISH REST AUTOMATION
+
+1. INTERACTION MODEL
+
+- Use native Redfish REST requests with Python requests or redfish libraries. Do not parse vendor CLI tools or call subprocesses.
+- Keep HTTPS enabled for all calls. Suppress SSL warnings on internal self-signed endpoints with urllib3.disable_warnings.
+- Run scripts using uv run to manage packages.
+
+
+2. STAGED BIOS CHANGES
+
+HPE ProLiant Gen10 and Gen11 iLO 5 servers manage BIOS settings through a staging queue. Settings do not apply immediately. They apply on the next server reboot:
+
+1. Query active BIOS settings:
+   GET /redfish/v1/systems/1/bios
+
+2. Stage settings for next boot:
+   PATCH /redfish/v1/systems/1/bios/settings with payload:
+   {
+     "Attributes": {
+       "WorkloadProfile": "Virtualization - Max Performance",
+       "ProcVirtualization": "Enabled"
+     }
+   }
+
+3. Check the staging queue before rebooting:
+   Query GET /redfish/v1/systems/1/bios/settings and compare it against the active configuration to verify pending diffs.
+
+4. Reboot the server to apply staged settings:
+   POST /redfish/v1/systems/1/Actions/ComputerSystem.Reset with {"ResetType": "GracefulRestart"}. Use ForceRestart only if the host OS is frozen.
+
+
+3. BIOS PROFILES
+
+Store baseline configurations in JSON files (such as bios_profiles/virtualization_host.json). Filter out read-only hardware attributes like serial numbers and PCIe slot maps before pushing a profile to a new host.
+
+
+4. LOG AND TERMINAL HYGIENE
+
+- Mask session tokens and passwords in stdout.
+- Automated tests must mock Redfish responses. Never run unit tests against physical production server iLOs.

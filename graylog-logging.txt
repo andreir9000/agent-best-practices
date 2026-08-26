@@ -1,0 +1,57 @@
+GRAYLOG REST API AND LOG ANALYSIS
+
+1. AUTHENTICATION AND CONNECTION
+
+- Base URL: https://<graylog-host>/api
+- Always include the header {"X-Requested-By": "XMLHttpRequest"}.
+- Decrypt credentials just in time via Windows DPAPI.
+- Disable urllib3 SSL warnings on self-signed internal addresses.
+
+
+2. SEARCHING MESSAGES (POST /search/messages)
+
+Request payload:
+  payload = {
+      "query": "source:app-server-* AND message:error",
+      "timerange": {
+          "type": "absolute",
+          "from": "2026-08-20T00:00:00.000Z",
+          "to": "2026-08-26T23:59:59.999Z"
+      },
+      "size": 1000,
+      "sort": "timestamp",
+      "sort_order": "desc",
+      "fields": ["timestamp", "source", "message"]
+  }
+
+Lucene query wildcard rule:
+Do not wrap wildcards in quotes when filtering fields.
+- Correct: source:app-* (expands to matching hosts).
+- Broken: source:"app-*" (searches literally for the asterisk character).
+
+
+3. PARSING RESPONSE DATAROWS
+
+Graylog returns results in two separate lists: schema (field definitions) and datarows (arrays of cell values). Map them by index:
+
+def parse_results(response_json):
+    schema = response_json.get("schema", [])
+    datarows = response_json.get("datarows", [])
+
+    records = []
+    for row in datarows:
+        record = {}
+        for idx, field_info in enumerate(schema):
+            if idx < len(row):
+                record[field_info["field"]] = row[idx]
+        records.append(record)
+    return records
+
+
+4. SSH RULES FOR FISH SHELL DATA NODES
+
+When running commands over SSH on Graylog cluster data nodes:
+- Connect directly from your local terminal. Do not hop through the web node if key forwarding is disabled.
+- The data node runs fish as its default login shell. Do not use bash subshell parentheses (...).
+- Wrap complex commands with bash -c:
+    ssh admin@192.168.1.50 "bash -c 'dpkg -l | grep -E \"mongodb|opensearch\"'"

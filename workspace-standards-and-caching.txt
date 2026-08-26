@@ -1,0 +1,93 @@
+WORKSPACE DIRECTORY LAYOUT AND TELEMETRY CACHING
+
+This guide sets the layout rules, script execution standards, and local data caching patterns across all infrastructure workspaces under ~\code.
+
+
+1. DIRECTORY LAYOUT
+
+Every infrastructure workspace uses this directory structure:
+
+<workspace-root>/
+  AGENTS.txt                           Agent rules, auth matrix, and system constraints
+  README.txt                           Operator setup guide and run commands
+  Run-<Task>.ps1 (or main.py)          Master orchestrator script
+  credentials.json                     Encrypted DPAPI credential file (gitignored)
+  scripts/                             Numbered step scripts and helpers
+    1_Fetch-<Telemetry>.ps1            Step 1: Collect live data
+    2_Build-<Report>.ps1               Step 2: Aggregate metrics and build text report
+    3_Build-HtmlReport.ps1             Step 3: Render standalone HTML
+    Setup-Credentials.ps1              One-time credential setup script
+  docs/                                Architecture references and handoff notes
+  data/                                Hardware specs, IP lists, and baseline configs
+  reports/                             Generated output reports and data cache
+    <Report>.txt                       Current latest text report
+    <Report>.html                      Standalone browser HTML report
+    <Report>_YYYYMMDD.txt              Previous baseline report for comparison
+    csv/                               Timestamped raw telemetry and summary CSVs
+    archive/                           Historical reports older than 24 hours
+  scratch/                             Temporary agent scripts and ad-hoc experiments
+  tests/                               Automated tests (mocked endpoints only)
+
+Layout rules:
+1. Every script inside scripts/ must be runnable by itself for quick debugging.
+2. Temporary debug scripts go into scratch/. Never leave scratch files in the root folder or in scripts/.
+3. Save raw telemetry to reports/csv/ with ISO timestamps (YYYYMMDD) so historical runs remain on disk.
+4. For credential storage rules and setup script implementation, see authentication-and-secrets.txt.
+
+
+2. STEP SCRIPT EXECUTION MODEL
+
+Workspaces break complex workflows into small, numbered step scripts under scripts/:
+
+1. Numbered prefixes:
+   Use 1_Fetch-..., 2_Build-..., 3_Render-... to make the execution pipeline obvious to operators and AI agents.
+
+2. Parameter parity:
+   Every step script must accept common parameters (such as $OrgName, $Days, $ForceRefresh, $UseCache) so the master runner can pass flags directly down to each step.
+
+3. Standalone invocation:
+   Each script must be directly testable in isolation without depending on global variables from earlier steps. Pass intermediate data via timestamped CSVs in reports/csv/.
+
+
+3. INFRASTRUCTURE DISCOVERY AND TELEMETRY CACHING
+
+Querying large clusters or vROps instances over the network is slow. Scripts use a 24-hour file cache to re-render reports in under a second:
+
+param(
+    [string]$OrgName,
+    [int]$Days = 90,
+    [switch]$ForceRefresh,
+    [switch]$UseCache
+)
+
+$SummaryCsvPath = "reports\csv\${OrgName}_Summary.csv"
+$RawCsvPath     = "reports\csv\${OrgName}_Raw_${Days}d.csv"
+
+# Check if cache exists and was modified within the last 24 hours
+$isCacheValid = (Test-Path $SummaryCsvPath) -and 
+                (Test-Path $RawCsvPath) -and 
+                ((Get-Item $SummaryCsvPath).LastWriteTime -gt (Get-Date).AddHours(-24))
+
+$shouldUseCache = $UseCache -or ($isCacheValid -and -not $ForceRefresh)
+
+if ($shouldUseCache -and (Test-Path $SummaryCsvPath)) {
+    Write-Host "Reading cached metrics from $SummaryCsvPath" -ForegroundColor Green
+    $vmSummaries = Import-Csv $SummaryCsvPath
+} else {
+    Write-Host "Cache expired or ForceRefresh set. Calling live API..." -ForegroundColor Cyan
+    # Read credentials.json as documented in authentication-and-secrets.txt
+    # Run live queries here...
+    $vmSummaries | Export-Csv -Path $SummaryCsvPath -NoTypeInformation
+}
+
+
+4. REPORT GENERATION AND ARCHIVING CONVENTIONS
+
+1. Active reports:
+   Write the newest output report directly to reports/<Report>.txt and reports/<Report>.html so operators have a predictable file path.
+
+2. Baseline snapshots:
+   When running periodic audits, keep a timestamped copy (reports/<Report>_YYYYMMDD.txt) in the folder to enable side-by-side diffing against previous runs.
+
+3. Old report rotation:
+   Move generated reports older than 30 days into reports/archive/ to keep the active reports directory clean.

@@ -1,0 +1,38 @@
+VMWARE ARIA OPERATIONS (VROPS) REPORTING RULES
+
+1. CONNECTION METHODS
+
+- Use the PowerCLI module VMware.VimAutomation.vROps.
+- Always connect with Connect-OMServer. Calling Invoke-RestMethod directly from PowerShell fails on older appliances because of TLS negotiation errors.
+
+
+2. METRIC KEYS AND AGGREGATION MATH
+
+- Cluster CPU usage: Use cpu|capacity_usagepct_average. Matches the UI title "CPU | Capacity Usage (%)".
+- Cluster CPU contention: Use cpu|capacity_contentionPct. Do not substitute per-VM peak contention.
+- vCPU allocation ratio: cpu|vcpus_to_cores_allocation_ratio counts powered-on VMs only.
+- Finding metric keys: Run Get-OMStatKey to discover supported metrics for a given resource kind.
+
+
+3. MULTI-TENANT VCD RESOURCE STANDARDS
+
+- Tenant VDC memory allocation: Use memory|used on ResourceKind: ORG_VDC. This represents configured vRAM for running VMs in the tenant space. Do not add hypervisor memory overhead (memory|overhead) to tenant billing numbers.
+- Storage units: Reports and executive summaries must standardize on TB as the main unit.
+- Replication storage: Exclude leftover test failover records (look for _restored in job names) when calculating true replicated source data sizes.
+
+
+4. RICH OUTLOOK HTML AND CLIPBOARD EXPORT
+
+Inline styles:
+Microsoft Outlook drops external and head stylesheets. Every table, header, and cell must use explicit inline CSS:
+
+  <table style="border-collapse: collapse; width: 100%;">
+    <tr style="background-color: #f1f5f9;">
+      <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: left;">Metric</th>
+      <th style="border: 1px solid #cbd5e1; padding: 8px 12px; text-align: right;">Value</th>
+    </tr>
+  </table>
+
+Copying HTML directly to the Windows clipboard:
+  Add-Type -AssemblyName System.Windows.Forms
+  [System.Windows.Forms.Clipboard]::SetText($HtmlContent, [System.Windows.Forms.TextDataFormat]::Html)

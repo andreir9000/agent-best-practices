@@ -1,0 +1,50 @@
+NUTANIX PRISM, OPENAPI SDKS, AND CVM AUTOMATION
+
+1. USE DOMAIN SDKS
+
+Do not write raw HTTP requests for Nutanix API calls when an SDK is generated. Use the SDK for the matching domain:
+- nutanix_network_sdk: Subnets, virtual networks, and Flow network security.
+- nutanix_prism_sdk: Prism Central entities, tasks, and categories.
+- nutanix_clustermgmt_sdk: Host clusters, storage pools, and host hardware.
+- nutanix_dataprotection_sdk: Protection domains, VM recovery plans, and snapshots.
+
+
+2. QUERYING OPENAPI SPECS WITHOUT FLOODING CONTEXT
+
+Do not load multi-megabyte Swagger or OpenAPI YAML files into the model context.
+Use yq from the shell to inspect specific endpoints:
+
+  yq '.paths."/api/networking/v4.0/config/subnets"' api_reference/swagger-networking-v4.2-all.yaml
+
+If you only need field names, use ripgrep to find the model definition.
+
+
+3. HANDLING NOISY COMMAND OUTPUT
+
+When running cluster builds, AOS image uploads, or multi-node upgrades:
+- Redirect full terminal output to a log file on disk:
+    python run_cluster_upgrade.py > cluster_upgrade.log 2>&1
+- Print only short milestone messages to stdout ([Step 2/5] Uploading image...) so the context window stays clean.
+
+
+4. CVM SSH AND FILE TRANSFERS
+
+Use OpenSSH over Paramiko:
+Paramiko SFTP channels fail during multi-gigabyte binary transfers to Nutanix CVMs with ChannelException(2, 'Connect failed'). Use the native OpenSSH client (ssh.exe and scp.exe).
+
+Force legacy SCP mode with -O:
+Modern OpenSSH versions negotiate SFTP by default. Nutanix CVMs require legacy SCP protocol negotiation. Always pass -O:
+
+  scp -O -o BatchMode=yes -o StrictHostKeyChecking=no .\image.tar nutanix@192.168.1.10:/home/nutanix/tmp/
+
+Full binary paths:
+Administrative tools like ncli are not always in $PATH on every AOS release. Call them using their full path:
+
+  ssh -o BatchMode=yes nutanix@192.168.1.10 "/home/nutanix/prism/cli/ncli cluster info"
+
+
+5. PRISM API CONNECTIVITY
+
+- Prism API listens on port 9440 (https://<ip>:9440/api).
+- A 401 response confirms the host and port are reachable. Troubleshoot credentials, not network routes.
+- Distinguish Prism web admin credentials from CVM SSH keys.

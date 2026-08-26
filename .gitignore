@@ -1,0 +1,20 @@
+# Secrets and credentials
+credentials.json
+credentials.*.json
+*.dpapi
+*.dpapi.md
+creds.xml
+*creds*.json
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Logs & Temporary files
+*.log
+scratch/
+tmp/
