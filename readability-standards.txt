@@ -13,5 +13,19 @@ ASD-STE100 technical English rules:
 - Keep procedural instruction sentences under 20 words.
 - Keep descriptive statements under 25 words.
 - Use imperative action verbs for steps: Run, Write, Verify, Check, Stop, Start.
-- Use approved transitions: use "before" instead of "prior to"; use "then" instead of "subsequently"; use "because of" instead of "due to"; use "to" instead of "in order to".
 - Avoid noun stacks: do not put more than three consecutive nouns together.
+
+Vocabulary replacement list:
+- Invariant -> Rule, Requirement, Condition
+- Utilize / Leverage -> Use
+- Prior to -> Before
+- Subsequently -> Then, Later
+- Due to -> Because of
+- In order to -> To
+- Initiate / Commence -> Start
+- Terminate -> Stop, End
+- Perform verification of -> Verify, Check
+- Facilitate / Foster -> Help, Support
+- Paradigm / Substrate -> Pattern, Model, Framework
+- Orthogonal -> Separate, Independent
+- Crucial / Pivotal -> Important, Required

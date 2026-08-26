@@ -68,13 +68,14 @@ Structure large skills with a references/ directory to minimize context pollutio
 .agents/skills/<skill-name>/
   SKILL.md                  Main entry point and reference index
   references/               Specialized runbooks loaded on demand
-    <topic-1>.txt
-    <topic-2>.txt
+    <topic-1>.md
+    <topic-2>.md
   scripts/                  Standalone helper scripts
 
 Skill design rules:
 1. Keep SKILL.md under 40 lines with high-level instructions and a reference index.
-2. Place deep technical procedures into references/. Agents will load those files only on demand.
+2. Place detailed technical procedures into Markdown files in references/ (such as references/<topic>.md). Markdown supports links, headers, and code highlighting for agents.
+3. Agents load reference files on demand only.
 
 
 4. INFRASTRUCTURE DISCOVERY AND TELEMETRY CACHING
