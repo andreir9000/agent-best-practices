@@ -10,35 +10,40 @@ Every infrastructure workspace uses this directory structure:
 <workspace-root>/
   Run-<Task>.ps1 (or main.py)          Master orchestrator script
   credentials.json                     Encrypted DPAPI credential file (gitignored)
-  scripts/                             Numbered step scripts and helpers
+  scripts/                             Numbered step scripts and setup utilities
     1_Fetch-<Telemetry>.ps1            Step 1: Collect live data
     2_Build-<Report>.ps1               Step 2: Aggregate metrics and build text report
     3_Build-HtmlReport.ps1             Step 3: Render standalone HTML
     Setup-Credentials.ps1              One-time credential setup script
-  docs/                                Architecture references and handoff notes
+  docs/                                Architecture references and session handoffs
   data/                                Hardware specs, IP lists, and baseline configs
   reports/                             Generated output reports and data cache
     <Report>.txt                       Current latest text report
     <Report>.html                      Standalone browser HTML report
     <Report>_YYYYMMDD.txt              Previous baseline report for comparison
-    csv/                               Timestamped raw telemetry and summary CSVs
-    archive/                           Historical reports older than 24 hours
-  scratch/                             Temporary agent scripts and ad-hoc experiments
+    csv/                               Timestamped raw telemetry, summaries, and cache
+    archive/                           Historical reports older than 30 days
+  scratch/                             Temporary test scripts (must be gitignored)
   tests/                               Automated tests (mocked endpoints only)
 
 Layout rules:
-1. Every script inside scripts/ must run independently for quick debugging.
-2. Put temporary debug scripts into scratch/. Never leave scratch files in the root folder.
-3. Save raw telemetry to reports/csv/ with ISO timestamps (YYYYMMDD).
-4. For credential rules, see authentication-and-secrets.txt.
+1. Put all executable automation scripts in scripts/. Every script must run independently.
+2. Store raw telemetry, summaries, and 24-hour caches in reports/csv/ with ISO timestamps (YYYYMMDD).
+3. Move historical reports older than 30 days into reports/archive/.
+4. Place architecture notes and session handoffs in docs/ (such as docs/handoff-<name>.txt).
+5. Put temporary test scripts in scratch/. Never leave scratch files in the root directory.
 
 
-2. SCRIPT-FIRST EXECUTION AND TOOLING
+2. SCRIPT-FIRST EXECUTION AND AGENT TOOLING
+
+Agent tool mandate:
+- Always use built-in agent file tools (write_to_file, replace_file_content, view_file, list_dir) to create and edit files.
+- Never write ad-hoc Python or shell scripts to manipulate workspace files.
 
 Script-first rule:
 - Never pass multi-line code to python -c or powershell -Command.
 - Always write logic to a .py or .ps1 file in scripts/ or scratch/.
-- Run scripts with uv run python <script>.py or pwsh -File <script>.ps1.
+- Run scripts with uv run python scripts/<script>.py or pwsh -File scripts/<script>.ps1.
 
 Python and uv package management:
 - Never call bare python or pip directly.
@@ -56,7 +61,23 @@ Step script execution model:
    Test each script in isolation. Pass intermediate data through CSV files in reports/csv/.
 
 
-3. INFRASTRUCTURE DISCOVERY AND TELEMETRY CACHING
+3. PROGRESSIVE DISCLOSURE IN SKILLS
+
+Structure large skills with a references/ directory to minimize context pollution:
+
+.agents/skills/<skill-name>/
+  SKILL.md                  Main entry point and reference index
+  references/               Specialized runbooks loaded on demand
+    <topic-1>.txt
+    <topic-2>.txt
+  scripts/                  Standalone helper scripts
+
+Skill design rules:
+1. Keep SKILL.md under 40 lines with high-level instructions and a reference index.
+2. Place deep technical procedures into references/. Agents will load those files only on demand.
+
+
+4. INFRASTRUCTURE DISCOVERY AND TELEMETRY CACHING
 
 Network queries against large clusters are slow. Scripts use a 24-hour file cache to re-render reports quickly:
 
@@ -86,15 +107,3 @@ if ($shouldUseCache -and (Test-Path $SummaryCsvPath)) {
     # Run live queries here...
     $vmSummaries | Export-Csv -Path $SummaryCsvPath -NoTypeInformation
 }
-
-
-4. REPORT GENERATION AND ARCHIVING CONVENTIONS
-
-1. Active reports:
-   Write the newest output report to reports/<Report>.txt and reports/<Report>.html.
-
-2. Baseline snapshots:
-   Save a timestamped copy (reports/<Report>_YYYYMMDD.txt) for comparison against previous runs.
-
-3. Old report rotation:
-   Move generated reports older than 30 days into reports/archive/.
