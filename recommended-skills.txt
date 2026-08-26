@@ -1,0 +1,65 @@
+RECOMMENDED SKILLS AND OPERATIONAL PATTERNS
+
+Source repository:
+https://github.com/cursor/plugins/tree/main/pstack/skills
+
+This document lists external skill references and core operational patterns to adopt across our infrastructure automation workspaces.
+
+
+1. OPERATIONAL RISK AND SAFETY PATTERNS
+
+blast-radius:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/blast-radius/SKILL.md
+- Purpose: Identify downstream breakages before execution.
+- Application: Use before modifying hypervisor networks, iLO BIOS settings, or storage pools. Prove safety by running test commands rather than writing speculative explanations.
+
+principle-make-operations-idempotent:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/principle-make-operations-idempotent/SKILL.md
+- Purpose: Ensure scripts converge to the target state regardless of prior partial runs or crashes.
+- Application: Apply to ESXi host provisioning, local account configuration, and Nutanix cluster tasks.
+
+
+2. EXECUTION AND VERIFICATION PATTERNS
+
+principle-prove-it-works:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/principle-prove-it-works/SKILL.md
+- Purpose: Require empirical verification before declaring a task complete.
+- Application: Run real CLI commands or silent connection tests. Output concrete pass or fail evidence.
+
+principle-sequence-verifiable-units:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/principle-sequence-verifiable-units/SKILL.md
+- Purpose: Break complex operations into small, numbered, independently testable steps.
+- Application: Use the numbered step script model (1_Fetch-..., 2_Build-...) with parameter parity across all stages.
+
+create-verification-skill:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/create-verification-skill/SKILL.md
+- Purpose: Build repeatable test harnesses to verify system integrity.
+- Application: Create health-check scripts in target workspaces to audit ESXi services, iLO power states, and Nutanix alerts.
+
+
+3. CONTEXT AND WORKSPACE MANAGEMENT PATTERNS
+
+principle-guard-the-context-window:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/principle-guard-the-context-window/SKILL.md
+- Purpose: Prevent context window exhaustion by routing large payloads to disk and loading only summaries.
+- Application: Use yq for OpenAPI filtering, redirect noisy logs to disk, and use 24-hour telemetry caching.
+
+principle-encode-lessons-in-structure:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/principle-encode-lessons-in-structure/SKILL.md
+- Purpose: Turn past operational failures into structural constraints and code standards.
+- Application: Codify discovered failure modes (such as PowerShell colon scoping and legacy SCP flags) directly into domain documentation.
+
+principle-fix-root-causes:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/principle-fix-root-causes/SKILL.md
+- Purpose: Diagnose underlying mechanisms rather than applying surface patches or blind retries.
+- Application: Distinguish network routing reachability from credential and authorization failures.
+
+principle-boundary-discipline:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/principle-boundary-discipline/SKILL.md
+- Purpose: Enforce strict separation between data collection, business logic math, and output rendering.
+- Application: Keep raw telemetry CSV files separate from rendered HTML reports and capacity billing math.
+
+principle-subtract-before-you-add:
+- Reference: https://github.com/cursor/plugins/tree/main/pstack/skills/principle-subtract-before-you-add/SKILL.md
+- Purpose: Delete unused code and remove redundant files before adding new layers.
+- Application: Prune obsolete scripts and archive historical reports older than 30 days.
