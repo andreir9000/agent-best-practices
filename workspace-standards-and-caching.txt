@@ -61,7 +61,27 @@ Step script execution model:
    Test each script in isolation. Pass intermediate data through CSV files in reports/csv/.
 
 
-3. PROGRESSIVE DISCLOSURE IN SKILLS
+3. LIVE INFRASTRUCTURE SAFETY RULES
+
+Follow these safety steps before creating, modifying, rebooting, or deleting live resources:
+
+1. Write the script to disk:
+   Save the full script in scripts/ or scratch/ first. Test and inspect the logic.
+
+2. Inform the user:
+   List the target endpoints.
+   Detail the exact changes.
+   State if a host reboot will happen.
+   Provide the rollback plan.
+
+3. Get user approval:
+   Wait for explicit user confirmation before running the script against live systems.
+
+4. Dry-run support:
+   Support -WhatIf in PowerShell scripts or --dry-run in Python scripts for modifying actions.
+
+
+4. PROGRESSIVE DISCLOSURE IN SKILLS
 
 Structure large skills with a references/ directory to minimize context pollution:
 
@@ -78,7 +98,7 @@ Skill design rules:
 3. Agents load reference files on demand only.
 
 
-4. INFRASTRUCTURE DISCOVERY AND TELEMETRY CACHING
+5. INFRASTRUCTURE DISCOVERY AND TELEMETRY CACHING
 
 Network queries against large clusters are slow. Scripts use a 24-hour file cache to re-render reports quickly:
 
