@@ -1,11 +1,16 @@
 VMWARE VSPHERE AND POWERCLI RULES
 
-1. PREREQUISITES
+1. TOOLING STANDARD
 
-Scripts can assume VMware.PowerCLI is imported and connection to vCenter is established, or load credentials from DPAPI files.
+Always use PowerShell and VMware PowerCLI for vSphere infrastructure tasks. Do not write custom Python REST clients for vSphere. Restrict Python REST to out-of-band management where native CLI modules do not exist (such as HPE iLO Redfish).
 
 
-2. POWERCLI COMMAND RULES
+2. PREREQUISITES
+
+Scripts can assume VMware.PowerCLI is imported and connection to vCenter is established, or load credentials from credentials.json.
+
+
+3. POWERCLI COMMAND RULES
 
 Advanced settings:
 Do not use Get-VMHostAdvancedConfiguration or Set-VMHostAdvancedConfiguration. VMware deprecated those cmdlets. Use Get-AdvancedSetting and Set-AdvancedSetting:
@@ -37,9 +42,9 @@ Trigger storage rescans across all adapters:
   Get-VMHostStorage -VMHost $VMHost -RescanAllHba -RescanVmfs
 
 
-3. LOCAL ESXI HOST ACCOUNTS THROUGH VCENTER
+4. LOCAL ESXI HOST ACCOUNTS THROUGH VCENTER
 
-When connected to vCenter, cmdlets like New-VMHostAccount and New-VIPermission fail because they expect direct host connections or Active Directory SSO users.
+When connected to vCenter, cmdlets like New-VMHostAccount and New-VIPermission fail because they look for SSO accounts.
 
 Create or update local accounts:
 Use HostLocalAccountManager directly through the host view:
@@ -71,7 +76,7 @@ Disable interactive shell access:
   $EsxCli.system.account.set.Invoke($SetArgs)
 
 
-4. WBEM AND SFCB CIM WATCHDOG MANAGEMENT
+5. WBEM AND SFCB CIM WATCHDOG MANAGEMENT
 
 # Enable WBEM provider
 $EsxCli = Get-EsxCli -VMHost $VMHost -V2
@@ -84,7 +89,7 @@ Get-VMHostService -VMHost $VMHost | Where-Object { $_.Key -eq "sfcbd-watchdog" }
 Get-VMHostService -VMHost $VMHost | Where-Object { $_.Key -eq "sfcbd-watchdog" } | Set-VMHostService -Policy "on" -Confirm:$false
 
 
-5. POWERSHELL STRING VARIABLE SCOPING
+6. POWERSHELL STRING VARIABLE SCOPING
 
 When a variable name in double quotes is immediately followed by a colon, wrap the variable in curly braces. Otherwise PowerShell parses the colon as a scope identifier:
 

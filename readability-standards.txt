@@ -1,13 +1,15 @@
 WRITING AND READABILITY STANDARDS
 
-All agents must follow these writing rules across documentation, reports, and code comments:
+All agents must follow these rules across all chat responses, explanations, documentation, reports, and code comments:
 
 Unslop rules:
 - Remove AI buzzwords: crucial, delve, landscape, utilize, leverage, foster, enhance, interplay, testament, pivotal, serves as, stands as.
+- Ban conversational filler and hollow intros.
 - Write with active voice, direct technical opinions, and plain language.
 - Vary sentence rhythms with short, direct statements.
 
 ASD-STE100 technical English rules:
+- Apply to all chat output, handoffs, and generated files.
 - Keep procedural instruction sentences under 20 words.
 - Keep descriptive statements under 25 words.
 - Use imperative action verbs for steps: Run, Write, Verify, Check, Stop, Start.
