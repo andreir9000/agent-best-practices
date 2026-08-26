@@ -1,6 +1,6 @@
 WORKSPACE DIRECTORY LAYOUT AND TELEMETRY CACHING
 
-This guide sets the layout rules, script execution standards, and local data caching patterns across all infrastructure workspaces under ~\code.
+This guide sets layout rules, execution standards, and data caching patterns across infrastructure workspaces under ~\code.
 
 
 1. DIRECTORY LAYOUT
@@ -8,8 +8,6 @@ This guide sets the layout rules, script execution standards, and local data cac
 Every infrastructure workspace uses this directory structure:
 
 <workspace-root>/
-  AGENTS.txt                           Agent rules, auth matrix, and system constraints
-  README.txt                           Operator setup guide and run commands
   Run-<Task>.ps1 (or main.py)          Master orchestrator script
   credentials.json                     Encrypted DPAPI credential file (gitignored)
   scripts/                             Numbered step scripts and helpers
@@ -29,29 +27,38 @@ Every infrastructure workspace uses this directory structure:
   tests/                               Automated tests (mocked endpoints only)
 
 Layout rules:
-1. Every script inside scripts/ must be runnable by itself for quick debugging.
-2. Temporary debug scripts go into scratch/. Never leave scratch files in the root folder or in scripts/.
-3. Save raw telemetry to reports/csv/ with ISO timestamps (YYYYMMDD) so historical runs remain on disk.
-4. For credential storage rules and setup script implementation, see authentication-and-secrets.txt.
+1. Every script inside scripts/ must run independently for quick debugging.
+2. Put temporary debug scripts into scratch/. Never leave scratch files in the root folder.
+3. Save raw telemetry to reports/csv/ with ISO timestamps (YYYYMMDD).
+4. For credential rules, see authentication-and-secrets.txt.
 
 
-2. STEP SCRIPT EXECUTION MODEL
+2. SCRIPT-FIRST EXECUTION AND TOOLING
 
-Workspaces break complex workflows into small, numbered step scripts under scripts/:
+Script-first rule:
+- Never pass multi-line code to python -c or powershell -Command.
+- Always write logic to a .py or .ps1 file in scripts/ or scratch/.
+- Run scripts with uv run python <script>.py or pwsh -File <script>.ps1.
 
+Python and uv package management:
+- Never call bare python or pip directly.
+- Initialize Python projects with pyproject.toml.
+- Use uv sync to manage .venv dependencies locally on disk.
+
+Step script execution model:
 1. Numbered prefixes:
-   Use 1_Fetch-..., 2_Build-..., 3_Render-... to make the execution pipeline obvious to operators and AI agents.
+   Use 1_Fetch-..., 2_Build-..., 3_Render-... to make the pipeline clear.
 
 2. Parameter parity:
-   Every step script must accept common parameters (such as $OrgName, $Days, $ForceRefresh, $UseCache) so the master runner can pass flags directly down to each step.
+   Every step script must accept common parameters (such as $OrgName, $Days, $ForceRefresh, $UseCache).
 
 3. Standalone invocation:
-   Each script must be directly testable in isolation without depending on global variables from earlier steps. Pass intermediate data via timestamped CSVs in reports/csv/.
+   Test each script in isolation. Pass intermediate data through CSV files in reports/csv/.
 
 
 3. INFRASTRUCTURE DISCOVERY AND TELEMETRY CACHING
 
-Querying large clusters or vROps instances over the network is slow. Scripts use a 24-hour file cache to re-render reports in under a second:
+Network queries against large clusters are slow. Scripts use a 24-hour file cache to re-render reports quickly:
 
 param(
     [string]$OrgName,
@@ -84,10 +91,10 @@ if ($shouldUseCache -and (Test-Path $SummaryCsvPath)) {
 4. REPORT GENERATION AND ARCHIVING CONVENTIONS
 
 1. Active reports:
-   Write the newest output report directly to reports/<Report>.txt and reports/<Report>.html so operators have a predictable file path.
+   Write the newest output report to reports/<Report>.txt and reports/<Report>.html.
 
 2. Baseline snapshots:
-   When running periodic audits, keep a timestamped copy (reports/<Report>_YYYYMMDD.txt) in the folder to enable side-by-side diffing against previous runs.
+   Save a timestamped copy (reports/<Report>_YYYYMMDD.txt) for comparison against previous runs.
 
 3. Old report rotation:
-   Move generated reports older than 30 days into reports/archive/ to keep the active reports directory clean.
+   Move generated reports older than 30 days into reports/archive/.
